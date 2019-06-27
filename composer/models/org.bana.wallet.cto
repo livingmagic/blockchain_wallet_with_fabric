@@ -1,0 +1,48 @@
+
+/**
+ * Write your model definitions here
+ */
+
+namespace org.bana.wallet
+
+abstract participant Account identified by accountId {
+  o String accountId
+  o String name
+}
+
+participant UserAccount extends Account {
+    o String cardID
+}
+
+participant CompanyAccount extends Account {
+    o String companyCode
+}
+
+participant PayCompanyAccount extends CompanyAccount {
+
+}
+
+asset Balance identified by balanceId {
+  o String balanceId
+  --> Account account
+  o Double value
+}
+
+transaction TopUp {
+  o String balanceId
+  o Double value
+}
+
+transaction PayOut {
+  o String balanceDestId
+  o Double value
+}
+
+event TopUpSuccessEvent {
+  o String balanceId
+}
+
+event PayOutSuccessEvent {
+  o String balanceSrcId
+  o String balanceDestId
+}

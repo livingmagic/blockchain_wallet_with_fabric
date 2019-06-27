@@ -1,0 +1,22 @@
+/*
+ * Licensed to Lee. hahaha!!!
+ */
+query selectAccounts {
+  description: "Select all accounts"
+  statement:
+      SELECT org.bana.wallet.Account
+}
+
+query selectAccountByAccountId {
+  description: "Select Account based on their accountId"
+  statement:
+      SELECT org.bana.wallet.Account
+          WHERE (accountId==_$accountId)
+}
+
+query selectBalanceByAccount {
+  description: "Select Balance based on their account"
+  statement:
+      SELECT org.bana.wallet.Balance
+          WHERE (account == _$account)
+}

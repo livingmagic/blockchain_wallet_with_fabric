@@ -1,0 +1,174 @@
+
+version: '2'
+
+networks:
+  hyperledger:
+
+services:
+  ca.bana.trmchain.com:
+    image: hyperledger/fabric-ca:$ARCH-1.1.0
+    restart: always
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.bana.trmchain.com
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.bana.trmchain.com-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/$CA_SK
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - $CA_PATH:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca.bana.trmchain.com
+    networks:
+      - hyperledger
+
+  orderer.trmchain.com:
+    container_name: orderer.trmchain.com
+    image: hyperledger/fabric-orderer:$ARCH-1.1.0
+    restart: always
+    environment:
+      - GODEBUG=netdns=go
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/etc/hyperledger/orderer/msp
+      # Enabled TLS
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/etc/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/etc/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/etc/hyperledger/orderer/tls/ca.crt]
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    ports:
+      - 7050:7050
+    volumes:
+        - ./configtx:/etc/hyperledger/configtx
+        - ./crypto-config/ordererOrganizations/trmchain.com/orderers/orderer.trmchain.com/msp:/etc/hyperledger/orderer/msp
+        - ./crypto-config/ordererOrganizations/trmchain.com/orderers/orderer.trmchain.com/tls:/etc/hyperledger/orderer/tls
+    networks:
+      - hyperledger
+
+  peer0.bana.trmchain.com:
+    container_name: peer0.bana.trmchain.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - GODEBUG=netdns=go
+      - CORE_PEER_ID=peer0.bana.trmchain.com
+      - CORE_PEER_LOCALMSPID=BanaMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/peer/msp
+      - CORE_PEER_ADDRESS=peer0.bana.trmchain.com:7051
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+    command: peer node start
+    ports:
+      - 7051:7051
+      - 7053:7053
+    volumes:
+        - /var/run/:/host/var/run/
+        - ./crypto-config/peerOrganizations/bana.trmchain.com/peers/peer0.bana.trmchain.com/msp:/etc/hyperledger/peer/msp
+        - ./crypto-config/peerOrganizations/bana.trmchain.com/peers/peer0.bana.trmchain.com/tls:/etc/hyperledger/peer/tls
+        - ./crypto-config/peerOrganizations/bana.trmchain.com/users:/etc/hyperledger/msp/users
+        - ./configtx:/etc/hyperledger/configtx
+    depends_on:
+      - orderer.trmchain.com
+      - couchdb0
+    networks:
+      - hyperledger
+
+  peer1.bana.trmchain.com:
+    container_name: peer1.bana.trmchain.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - GODEBUG=netdns=go
+      - CORE_PEER_ID=peer1.bana.trmchain.com
+      - CORE_PEER_LOCALMSPID=BanaMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/peer/msp
+      - CORE_PEER_ADDRESS=peer1.bana.trmchain.com:7051
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+    ports:
+      - 8051:7051
+      - 8053:7053
+    volumes:
+        - /var/run/:/host/var/run/
+        - ./crypto-config/peerOrganizations/bana.trmchain.com/peers/peer1.bana.trmchain.com/msp:/etc/hyperledger/peer/msp
+        - ./crypto-config/peerOrganizations/bana.trmchain.com/peers/peer1.bana.trmchain.com/tls:/etc/hyperledger/peer/tls
+        - ./crypto-config/peerOrganizations/bana.trmchain.com/users:/etc/hyperledger/msp/users
+        - ./configtx:/etc/hyperledger/configtx
+    depends_on:
+      - orderer.trmchain.com
+      - couchdb1
+    networks:
+      - hyperledger
+
+  couchdb0:
+    container_name: couchdb0
+    restart: always
+    image: hyperledger/fabric-couchdb:$ARCH-0.4.6
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=
+      - COUCHDB_PASSWORD=
+    ports:
+      - 5984:5984
+    networks:
+      - hyperledger
+
+  couchdb1:
+    container_name: couchdb1
+    restart: always
+    image: hyperledger/fabric-couchdb:$ARCH-0.4.6
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=
+      - COUCHDB_PASSWORD=
+    ports:
+      - 6984:5984
+    networks:
+      - hyperledger
+
+  cli:
+    container_name: cli
+    restart: always
+    image: hyperledger/fabric-tools:$ARCH-1.1.0
+    tty: true
+    # To enable GRPC debug, set the environment variable CORE_LOGGING_GRPC to DEBUG
+    environment:
+      - GODEBUG=netdns=go
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_LOGGING_LEVEL=DEBUG
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.bana.trmchain.com:7051
+      - CORE_PEER_LOCALMSPID=BanaMSP
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/bana.trmchain.com/users/Admin@bana.trmchain.com/msp
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/bana.trmchain.com/peers/peer0.bana.trmchain.com/tls/ca.crt
+      - CORE_CHAINCODE_KEEPALIVE=10
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+        - /var/run/:/host/var/run/
+        - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+        - ./configtx:/opt/gopath/src/github.com/hyperledger/fabric/peer/configtx/
+        - ./scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
+    networks:
+        - hyperledger
+    depends_on:
+      - orderer.trmchain.com
+      - peer0.bana.trmchain.com
+      - peer1.bana.trmchain.com
+    networks:
+      - hyperledger

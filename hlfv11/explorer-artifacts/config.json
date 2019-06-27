@@ -1,0 +1,40 @@
+{
+    "network-config": {
+        "org1": {
+            "name": "Bana",
+            "mspid": "BanaMSP",
+            "peer1": {
+                "requests": "grpcs://peer0.bana.trmchain.com:7051",
+                "events": "grpcs://peer0.bana.trmchain.com:7053",
+                "server-hostname": "peer0.bana.trmchain.com",
+                "tls_cacerts": "crypto-config/peerOrganizations/bana.trmchain.com/peers/peer0.bana.trmchain.com/tls/ca.crt"
+            },
+            "peer2": {
+                "requests": "grpcs://peer1.bana.trmchain.com:7051",
+                "events": "grpcs://peer1.bana.trmchain.com:7053",
+                "server-hostname": "peer1.bana.trmchain.com",
+                "tls_cacerts": "crypto-config/peerOrganizations/bana.trmchain.com/peers/peer1.bana.trmchain.com/tls/ca.crt"
+            },
+            "admin": {
+                "key": "crypto-config/peerOrganizations/bana.trmchain.com/users/Admin@bana.trmchain.com/msp/keystore",
+                "cert": "crypto-config/peerOrganizations/bana.trmchain.com/users/Admin@bana.trmchain.com/msp/signcerts"
+            }
+        }
+    },
+    "channel": "walletchannel",
+    "orderers": [
+        {
+            "mspid": "OrdererMSP",
+            "server-hostname": "orderer.trmchain.com",
+            "requests": "grpcs://orderer.trmchain.com:7050",
+            "tls_cacerts": "crypto-config/ordererOrganizations/trmchain.com/orderers/orderer.trmchain.com/tls/ca.crt"
+        }
+    ],
+    "keyValueStore": "/tmp/fabric-client-kvs",
+    "configtxgenToolPath": "fabric-path/bin",
+    "SYNC_START_DATE_FORMAT": "YYYY/MM/DD",
+    "syncStartDate": "2018/01/01",
+    "eventWaitTime": "30000",
+    "license": "Apache-2.0",
+    "version": "1.1"
+}

@@ -1,0 +1,36 @@
+
+version: '2'
+
+networks:
+  hyperledger:
+
+services:
+  explorer:
+    image: lihongyong/docker-blockchain-explorer
+    container_name: explorer
+    restart: always
+    volumes:
+      - ./explorer-artifacts/pgconfig.json:/blockchain-explorer/app/persistence/postgreSQL/db/pgconfig.json
+      - ./explorer-artifacts/config.json:/blockchain-explorer/app/platform/fabric/config.json
+      - ./crypto-config:/blockchain-explorer/crypto-config
+      - ./fabric-$ARCH:/blockchain-explorer/fabric-path
+    ports:
+      - "8088:8080"
+    command: bash -c 'sleep 30; node main.js'
+    networks:
+      - hyperledger
+      
+  postgresql:
+    image: postgres
+    restart: always
+    container_name: postgresql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./explorer-artifacts/explorerpg.sql:/docker-entrypoint-initdb.d/explorerpg.sql
+      - ./explorer-artifacts/updatepg.sql:/docker-entrypoint-initdb.d/updatepg.sql
+    networks:
+      - hyperledger
